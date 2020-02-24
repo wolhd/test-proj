@@ -1,0 +1,87 @@
+
+Serial reader design
+
+- open port, set attribs
+
+- read buffer
+  - if num_read is too small, read again
+  - call search_ubx
+  - if true, call parse_nav_pvt
+  - else copy remaining in buffer to next_buffer
+  - read buffer, copy to next_buffer
+   - next_buffer is big enough, call search ubx
+   
+   
+ buffer[N]
+ buffer_size = N
+ msg_buffer[N]
+ msg_buffer_size = N
+ min_msg_size = 110
+ while(true) {
+   total_read = 0
+   while(total_read < min_msg_size)
+     num_read = read(fd, buffer, buffer_size)
+     if num_read < 0 print error, continue
+     memcpy(parse_buffer, buffer, buffer + num_read)
+     
+----
+buffer, buffer_size, msg_ptr
+buffer_start = buffer
+in_buffer_len = 0
+min_msg_size = 110
+// read port     
+while(true)
+  has_error = false
+  // read enough to parse a msg
+  while(in_buffer_len < msg_len)
+    num_read = read(fd, buffer+in_buffer_len, buffer_size-in_buffer_len)
+    if num_read < 0, print error, 
+      has_error = true
+      break
+    in_buffer_len += num_read
+    if in_buffer_len > buffer_size, print warn
+      in_buffer_len = buffer_size
+  
+  if has_error
+    has_error =false
+    in_buffer_len = 0;
+  else
+    while(remaining_parse_bytes >= msg_len
+    
+    found = searchUbx(buffer, in_buffer_len, &msg_ptr)
+    if !found
+      leftover_len = buffer + in_buffer_len - msg_ptr
+      memcpy(buffer, msg_ptr, leftover_len)
+      in_buffer_len = leftover_len
+    else
+      parse_nav_pvt(msg_ptr, &end_ptr)
+      leftover_len = buffer + in_buffer_len - end_ptr
+      memcpy(buffer, end_ptr, leftover_len)
+      in_buffer_len = leftover_len
+ 
+ 
+ 
+reader
+  while read_buffer doesn't have enough to parse ubx msg
+    read into read_buffer
+  set parse buffer with read_buffer
+  while parse_buffer has enough to parse ubx msg
+      search for ubx header
+      if found
+          parse ubx msg, put msg in output_queue
+      adjust parse buffer to remaining
+  copy remaining parse buffer to read buffer
+
+    
+---
+buffer
+  set array content
+  set max len
+  get next ptr
+  get curr len
+  add array
+  get remaining len    
+    
+    
+    
+    
