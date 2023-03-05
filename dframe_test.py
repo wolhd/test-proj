@@ -77,3 +77,5 @@ plt.plot(bins,line, label='n1')
 plt.plot(bins,line+1.2, label='n2')
 plt.legend(loc="upper right")
 plt.show()
+
+#todo, read all pkl files of pattern into df's
