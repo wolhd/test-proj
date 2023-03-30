@@ -135,3 +135,11 @@ class NeuralNetwork():
 
 # UNCOMMENT THE LINE BELOW TO TEST YOUR NEURAL NETWORK
 # x.test_neural_network()
+
+"""
+# Compute gradients 
+output_layer_error = # derivative of loss with respect to the "not-yet-activated output" (1 by 1) 
+hidden_layer_error = # derivative of loss with respect to the the "not-yet-activated hidden layer values" (3 by 1) 
+bias_gradients = # derivative of loss with respect to the biases that contribute to the not-yet-activated hidden layer values (3 by 1) hidden_to_output_weight_gradients = # derivative of loss with respect to the weights that turn hidden activations to not-yet-activated outputs (3 by 1) 
+input_to_hidden_weight_gradients = # derivative of loss with respect to the weights that turn inputs to the not-yet-activated hidden layer values (2 by 3)
+"""
