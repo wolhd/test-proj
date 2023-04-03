@@ -69,3 +69,44 @@ if __name__ == '__main__':
     np.random.seed(12321)  # for reproducibility
     torch.manual_seed(12321)
     main()
+
+###
+# 32 kernel 5, stride 1
+
+# 32 - (5-1) -1 / 1 + 1 = (32 - 4 - 1)/1 + 1 = 27/1 + 1 = 28
+
+# 32 - 5 + 1 = 28
+
+
+
+# 28 - 2 -1 -1 / 2 + 1 = 26/2 + 1= 14
+
+
+
+# 6 , kernel 2, stride 2
+
+# 12, 34, 56  = 3
+
+# 6 - (2-1) -1 / 2 + 1= 4/2 + 1 = 3
+
+# 4, kernel 2, stride 2
+
+# 12 34  = 2
+
+# 4 - (2-1) -1 / 2 + 1 = 2/2 + 1 = 2
+
+# ---
+
+# 28x28
+
+# 28 kernel 3 => 28-3+1 = 26
+
+# conv in=1 out=32  26x26
+
+# max pool 2x2 => chan 32 13x13
+
+# conv in 32 out 64 : 13 kern 3 -> 13-3+1= 11
+
+# max pool 2x2 -> chan 64 5x5
+ 
+# flatten 64x5x5  to 128
