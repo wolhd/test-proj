@@ -2,7 +2,7 @@
 from typing import Tuple
 import numpy as np
 from common import GaussianMixture
-
+import common
 
 
 
@@ -126,4 +126,29 @@ def run(X: np.ndarray, mixture: GaussianMixture,
             for all components for all examples
         float: log-likelihood of the current assignment
     """
-    raise NotImplementedError
+    mix = mixture
+    oldLogLik = None
+    i = -1
+    scounts = post
+    lldiff = 0
+    while True:
+        i = i + 1
+        scounts, loglik = estep(X, mix)
+        #print(f"log lik: {loglik}")
+        if oldLogLik == None:
+            oldLogLik = loglik
+        lldiff = loglik - oldLogLik
+        oldLogLik = loglik
+        if i>0 and lldiff <= 1e-6 * np.fabs(loglik):
+            #print(f"iter {i}, log lik diff is small {lldiff}, {loglik}")
+            break
+
+        #common.plot(X, mix, scounts, f"cost {loglik}")
+
+        # if i > 20:
+        #     break
+        
+        mix = mstep(X, scounts)
+        # if np.mod(i, 10) == 0:
+        #     print(f"iter {i}, lldiff {lldiff}")
+    return mix, scounts, loglik
