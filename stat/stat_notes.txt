@@ -1,6 +1,8 @@
 
 
-Fisher Information
+Fisher Information I(theta)
+
+I(theta) = - E[2nd deriv loglik-pdf wrt to theta]
 
 - equal to negative the Expectation of the 2nd derivative of the log likelihood 
  of a single instance (a log of pdf, not log likelihood of a set of samples).
@@ -20,5 +22,7 @@ MLE Maximum Likelihood Estimator
   - Unbiased:  
        (Expectation of the MLE estimator is same as true parameter)
   - Normal rand. variable: 
-       (MLE estim - true param) / sqrt(Var(MLE estim))
-       converges to N(0,1)
+       (MLE estim - true param) / sqrt(Variance(MLE estim)) -> N(0,1)
+       or
+       sqrt(n)(MLE estim - true param) -> N(0, I(true param)^(-1))
+         i.e., asymptotic variance is 1/(fisher info)
