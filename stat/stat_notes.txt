@@ -1,0 +1,24 @@
+
+
+Fisher Information
+
+- equal to negative the Expectation of the 2nd derivative of the log likelihood 
+ of a single instance (a log of pdf, not log likelihood of a set of samples).
+ The derivative is w.r.t the parameter of interest theta.
+ Then Expectation is calculated by taking the average of this expression
+ (the 2nd dervative) weighted by the pdf of x (X being the random variable
+ this pdf represents)
+ The Fisher Information gives how sensitive the likelihood (pdf) is
+ to the parameter of interest (theta).
+
+
+MLE Maximum Likelihood Estimator
+- given some regularity conditions (which are?)
+- is **asymptotically**
+  - Consistent:
+       (same as true parameter)
+  - Unbiased:  
+       (Expectation of the MLE estimator is same as true parameter)
+  - Normal rand. variable: 
+       (MLE estim - true param) / sqrt(Var(MLE estim))
+       converges to N(0,1)
