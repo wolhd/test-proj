@@ -26,3 +26,35 @@ MLE Maximum Likelihood Estimator
        or
        sqrt(n)(MLE estim - true param) -> N(0, I(true param)^(-1))
          i.e., asymptotic variance is 1/(fisher info)
+
+
+
+Var(X) = E(X^2) - (E(X))^2
+
+Consistency is a frequentist property of an estimator as it is only 
+desired when we assume a true value for the parameter.
+  Consistency is not a bayesian property
+
+
+Jeffreys prior
+ is proportional to sqrt( det(I(theta)) )
+
+
+CLT
+  sqrt(n)(xbar_n - mean) -> N(0,var)
+
+  sqrt(n)(xbar_n - mean) / stderror -> N(0,1)
+
+
+Bayesian stats
+ - asymptotic variance of a Bayesian estimator is based on the
+    estimator not on the posterior likelihood
+
+
+Delta Method
+  sqrt(n)(Z_n - theta) -> N(0, sigma^2)
+  sqrt(n)(g(Z_n) - g(theta)) -> N(0, (g'(theta))^2 sigma^2)
+
+  note: theta is true param (like mean) and is the value
+    applied to g'(theta)
+  (Unit 2, Lecture 5: tab 8)
