@@ -1,4 +1,7 @@
+-- genes data analysis
 - tips:
+ - do log transform of X first
+
  - standardize features before visualization etc
 
  - for t-sne, always try different perplexity values: for per in [5,10,30,50,80,100]:
