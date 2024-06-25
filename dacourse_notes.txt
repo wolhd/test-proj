@@ -1,0 +1,13 @@
+- tips:
+ - standardize features before visualization etc
+
+ - for t-sne, always try different perplexity values: for per in [5,10,30,50,80,100]:
+
+ - for kmeans, to find best # clusters, 
+  - use elbow plot of # clusters vs within-cluster sum of squares (inertia)
+  - plot avg slhouette score vs # clusters
+
+
+- install
+ conda create -n dacour python=3.10
+ conda install -y ipykernel scikit-learn pandas matplotlib yellowbrick memory_profiler
