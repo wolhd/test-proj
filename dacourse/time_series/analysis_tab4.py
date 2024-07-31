@@ -203,7 +203,56 @@ print(f' rms {rms}')
 plt.plot(x_all, y_all, label="observations")
 plt.plot(x_all,pred_t_all, label="forecasts")
 plt.legend()
-plt.titile('forecasts')
+plt.title('forecasts')
+
+#%%
+# new method for forecast: use trend, use AR from residuals
+# trend model params: alpha0 alpha1
+alpha0 = reg.intercept_
+alpha1 = reg.coef_[0,0]
+# AR model on residuals
+p = 2 # order
+ar_model_resid = AutoReg(linear_residuals, lags=p).fit()
+const = ar_model_resid.params[0]
+phi1 = ar_model_resid.params[1]
+phi2 = ar_model_resid.params[2]
+
+# start index of validation data is after training
+startIdx = dftrain.monthIdx.values[-1] + 1
+endIdx = dfcpi.monthIdx.values[-1]
+squ_err_arr = np.array([])
+pred_t_all = np.array([])
+x_all = np.array([])
+y_all = np.array([])
+for mi in range(startIdx, endIdx+1):
+    # monthIdx same as df index  ** should have a better way
+    y = dfcpi.CPI.values[mi]
+    y_1 = dfcpi.CPI.values[mi-1] # y (t-1) 
+    y_2 = dfcpi.CPI.values[mi-2] # y (t-2)
+    pred_t_trend = alpha0 + alpha1 * mi
+    pred_t_trend_1 = alpha0 + alpha1 * (mi-1) # pred trend (t-1)
+    pred_t_trend_2 = alpha0 + alpha1 * (mi-2) # pred trend (t-2)
+    resid_1 = y_1 - pred_t_trend_1
+    resid_2 = y_2 - pred_t_trend_2
+
+    pred_t = pred_t_trend + const + phi1 * resid_1 + phi2 *resid_2
+
+    # pred_t = const + trend * mi + phi1 * dfcpi.CPI.values[mi-1] + phi2 * dfcpi.CPI.values[mi-2]
+    
+    squ_err = (y - pred_t) ** 2
+    squ_err_arr = np.append(squ_err_arr, squ_err)
+    x_all = np.append(x_all, mi)
+    y_all = np.append(y_all, y)
+    pred_t_all = np.append(pred_t_all, pred_t)
+
+rms = squ_err_arr.mean() ** .5
+
+plt.plot(x_all, y_all, label="observations")
+plt.plot(x_all,pred_t_all, label="forecasts")
+plt.legend()
+plt.title('forecasts - using AR-residuals')
+print(f'rms {rms}')
+
 
 
 #%%
