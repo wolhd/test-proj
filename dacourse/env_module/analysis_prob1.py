@@ -52,8 +52,11 @@ print(f'd4 shape: {np.shape(d4)}')
 
 # %%
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 
-#plt.hist(np.reshape(d4,(1,-1)) )
+# takes long time to run
+#plt.hist(np.reshape(d4,(1,-1)))
+#plt.title('all u v values histogram')
 #%%
 max_u = np.max(d4[:,0,:,:])
 max_u_idx = np.unravel_index( np.argmax(d4[:,0,:,:]), d4.shape)
@@ -114,17 +117,39 @@ print(f' min var x coord {min_idx[1]*3} km , y coord {min_idx[0]*3} km')
 
 # %%
 # create image plot
-def implot(data2d):
+def implot(data2d, **kwargs):
     fig, ax = plt.subplots()
-    pos = ax.imshow(data2d, origin='lower', cmap='coolwarm')
+    pos = ax.imshow(data2d, origin='lower', **kwargs)
     fig.colorbar(pos, ax=ax)
     plt.show()
 
 implot(d3_u[30,:,:])
 
-def savedebug(data, name):
+def savedebugPlot(data, name):
     plt.plot(data.reshape(-1))
     plt.savefig('debug/' + name + '.png')
+def savedebug(data, name):
+    np.savetxt('debug/' + name + ".csv", data)
+
+#%%
+# create isnan map
+n_x = d4.shape[3]
+n_y = d4.shape[2]
+nanmap = np.zeros((n_y, n_x))
+nancount = 0
+for x in range(n_x):
+    for y in range(n_y):
+        dt = d4[:,0,y,x]
+        if np.all(np.isnan(dt)) or np.all(dt==0):
+            nancount += 1
+            continue
+        dt = d4[:,1,y,x]
+        if np.all(np.isnan(dt)) or np.all(dt==0):
+            nancount += 1
+            continue
+        nanmap[y,x]=1.0
+print(f' nan count {nancount}')
+implot(nanmap, cmap='ocean')
 
 
 # %%
@@ -138,8 +163,8 @@ n_t = d3_u.shape[0]
 n_x = d3_u.shape[2]
 n_y = d3_u.shape[1]
 
-x_inds = list(range(0, n_x, 200))
-y_inds = list(range(0, n_y, 200))
+x_inds = list(range(0, n_x, 20))
+y_inds = list(range(0, n_y, 20))
 
 # for each x,y store x2,y2,corr of highest corr 
 # [x_coord x y_coord x [y2,x2,corrcoef]]
@@ -167,6 +192,10 @@ for y1 in y_inds:
                 if y2 == y1 and x2 == x1:
                     # this is corr of same
                     continue
+                if np.linalg.norm([y2-y1, x2-x1]) < 200:
+                    # too close in dist
+                    continue
+
                 d2_u = d3_u[:,y2,x2]
                 d2_v = d3_v[:,y2,x2]
 
@@ -181,28 +210,278 @@ for y1 in y_inds:
                 if np.isnan(corr_u) or np.isnan(corr_v):
                     continue
 
-                cmap[y2,x2] = np.max([corr_u, corr_v])
+                cmap[y2,x2] = np.nanmax([corr_u, corr_v])
 
         # find highest corr, save it as hi corr for x1,y1
         if np.all( np.isnan( cmap ) ):
             continue    
 
-        savedebug(cmap, f'{x1}_{y1}')
+        #savedebug(cmap, f'{x1}_{y1}')
 
         hicorr = np.nanmax(cmap)
         hicorrIdx = np.unravel_index( np.nanargmax(cmap), cmap.shape )
         hicorrmap[y1, x1, :] = np.array([hicorrIdx[0], hicorrIdx[1], hicorr])
         hicorrval[y1, x1] = hicorr
-        print(f' hi corr val y1 x1 val {y1} {x1} {hicorr}')
+        print(f' hi corr={hicorr} x1,y1->x2,y2 {[x1,y1]} -> {[hicorrIdx[1],hicorrIdx[0]]}')
     
 nonnan = hicorrval[~np.isnan(hicorrval)]
 plt.plot(nonnan)
+#%%
+plt.hist(nonnan, bins=50)
+plt.xlabel('correlation coefficient')
+plt.ylabel('frequency')
+plt.title('Highest correlation coeff for each sampled location histogram')
 
+#%%
+def mycorr(x1,y1,x2,y2, d4):
+    label1 = f'{[x1,y1]}'
+    label2 = f'{[x2,y2]}'
+    d1_u = d4[:,0,y1,x1]
+    d2_u = d4[:,0,y2,x2]
+    d12_u = np.array([d1_u, d2_u])
+    print(f' d12 u shape {d12_u.shape}')
+    corr_u = np.corrcoef(d12_u)
+    print(corr_u)
+    d1_v = d4[:,1,y1,x1]
+    d2_v = d4[:,1,y2,x2]
+    d12_v = np.array([d1_v, d2_v])
+    print(f' d12 v shape {d12_v.shape}')
+    corr_v = np.corrcoef(d12_v)
+    print(corr_v)
+    fig, axs = plt.subplots(2)
+    axs[0].plot(d12_u.T, label=[label1,label2])
+    axs[0].set_ylabel('u flow')
+    axs[1].plot(d12_v.T)
+    axs[1].set_xlabel('time index')
+    axs[1].set_ylabel('v flow')
+    fig.suptitle(f'Flow values over time for location idxs {[x1,y1]} and {[x2,y2]}')
 
-# for u-component 
+#%%
+# get highest corr's
+# 10 highest  (get 20 since duplicates) 
+hvs = np.sort( hicorrval[~np.isnan(hicorrval)] )[-10:]
+h20 = hvs[0]
+xs = np.array([[0,0]])
+ys = np.array([[0,0]])
+for x1 in range(n_x):
+    for y1 in range(n_y):
+        vec = hicorrmap[y1,x1]
+        corr = vec[2]
+        if ~np.isnan(corr) and corr > h20:
+            line1xs = np.array([[x1, vec[1]]] )
+            line1ys = np.array([[y1, vec[0]]] )
+            xs = np.concatenate((xs,line1xs), axis=0)
+            ys = np.concatenate((ys,line1ys), axis=0)
+xs = xs[1:]
+ys = ys[1:]
+xs = xs.T.astype(int)
+ys = ys.T.astype(int)
+
+#%%
+# plot multiple lines,
+# plot(xs,ys)  xs= x's each col new line, ys= same
+
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xs, ys, '*:')
+plt.title('5 highest correlation coeffs')
+plt.show()
+
+# describe: used grid pts 10 spacing, check corr for dist>200
+#%%
+mycorr(xs[0,-1],ys[0,-1], xs[1,-1], ys[1,-1], d4)
+
+#mycorr(xs[0,-2],ys[0,-2], xs[1,-2], ys[1,-2], d4)
+
 
 # %%
 # example array
 a = np.array(range(12)).reshape((3,4))
+a[0,3] = 100
+a[0,2] = 200
+np.sort(a.reshape(-1))[-4:]
+# %%
+
+# simulation
+import math
+
+x_km = 100 * 3
+y_km = 100 * 3
+dt_hr = .1 # hr
+len_t_hr = 300
+
+def getFlowIndex(km, hr, maxIdx):
+    i = math.floor(km/3)
+    if i > maxIdx:
+        i = -1
+    t = math.floor(hr/3)
+    return (i,t)
+
+#%%
+def sim(x_km, y_km, len_t_hr, dt_hr):
+    xs_km = np.array([x_km])
+    ys_km = np.array([y_km])
+
+    for t_hr in range(0, len_t_hr, dt_hr):
+        x_km = xs_km[-1]
+        y_km = ys_km[-1]
+
+        xIdx = getFlowIndex(x_km, t_hr, 554)
+        yIdx = getFlowIndex(y_km, t_hr, 503)
+        t = xIdx[1] # time index
+        x = xIdx[0] # x index
+        y = yIdx[0] # y index
+        # print(f' t {t}')
+        if x < 0 or y < 0:
+            u = 0
+            v = 0
+        else:
+            u = d4[t, 0, y, x ]
+            v = d4[t, 1, y, x ]
+
+        x_km = x_km + u * t_hr
+        y_km = y_km + v * t_hr
+        xs_km = np.append(xs_km, x_km)
+        ys_km = np.append(ys_km, y_km)
+        # print(x_km)
+    return (km2Idxs(xs_km), km2Idxs(ys_km))
+
 
 # %%
+def km2Idxs(xs_km):
+   return np.floor(xs_km/3).astype(int)
+
+#xy_in = np.array([[100,100], [200,110], [350,150], [400,200], [220,190],[420,420],[290,440],[150,410]])
+
+#%%
+xy_in_arr = np.array([[100,100], [110,200], [200,220], [150, 400], [420,100], [470,220], [400,400]])
+xy_in_kms = xy_in_arr*3
+xys_traj_list = list()
+for i in range(len(xy_in_kms)):
+    xy_in = xy_in_kms[i]
+
+    xys = sim( xy_in[0], xy_in[1], 300, 1 )
+    xys_traj_list.append( xys )
+
+#%%    
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+for i in range( len( xys_traj_list ) ):
+    xys = xys_traj_list[i]
+    ax.plot(xys[0], xys[1])
+plt.title('Particle flow, After 300 hours')
+
+# %%
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+for i in range( len( xys_traj_list ) ):
+    xys = xys_traj_list[i]
+    ax.plot(xys[0][0], xys[1][0], 'x')
+plt.title('Particle flow: Initial state')
+# %%
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+for i in range( len( xys_traj_list ) ):
+    xys = xys_traj_list[i]
+    ax.plot(xys[0][0:100], xys[1][0:100])
+plt.title('Particle flow: After 100 hours')
+# %%
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+for i in range( len( xys_traj_list ) ):
+    xys = xys_traj_list[i]
+    ax.plot(xys[0][0:30], xys[1][0:30])
+plt.title('Particle flow: After 100 hours')
+# %%
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+for i in range( len( xys_traj_list ) ):
+    xys = xys_traj_list[i]
+    ax.plot(xys[0][0:55], xys[1][0:55])
+plt.title('Particle flow: After 200 hours')
+
+# %%
+
+# toy plane problem
+x_km = 300
+y_km = 1050
+# plots for 48, 72, 120 hrs
+xys = sim( x_km, y_km, 48, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+plt.title('Toy Plane: After 48 hours')
+plt.show()
+xys = sim( x_km, y_km, 72, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+plt.title('Toy Plane: After 72 hours')
+plt.show()
+xys = sim( x_km, y_km, 120, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+plt.title('Toy Plane: After 120 hours')
+# %%
+# toy plane problem
+x_km = 275
+y_km = 1025
+startTxt = f'start pt {[x_km,y_km]}'
+# plots for 48, 72, 120 hrs
+xys = sim( x_km, y_km, 48, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+plt.title('Toy Plane: After 48 hours, ' + startTxt)
+plt.show()
+xys = sim( x_km, y_km, 72, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+plt.title('Toy Plane: After 72 hours')
+plt.show()
+xys = sim( x_km, y_km, 120, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+circ = Circle((100,350),13, fill=False, edgecolor='gray')
+ax.add_patch(circ)
+plt.plot(100,350,'x')
+ax.plot(xys[0], xys[1], 'r:')
+plt.title('Toy Plane: After 120 hours')
+# %%
+x_km = 400
+y_km = 1150
+startTxt = f'start pt {[x_km,y_km]}'
+# plots for 48, 72, 120 hrs
+xys = sim( x_km, y_km, 48, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+circ = Circle((100,350),50, fill=False, edgecolor='gray')
+ax.add_patch(circ)
+plt.plot(100,350,'x')
+plt.title('Toy Plane: After 120 hours')
+plt.title('Toy Plane: After 48 hours, ' + startTxt)
+plt.show()
+xys = sim( x_km, y_km, 72, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+circ = Circle((100,350),50, fill=False, edgecolor='gray')
+ax.add_patch(circ)
+plt.plot(100,350,'x')
+plt.title('Toy Plane: After 120 hours')
+plt.title('Toy Plane: After 72 hours')
+plt.show()
+xys = sim( x_km, y_km, 120, 1 )
+fig, ax = plt.subplots()
+pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+ax.plot(xys[0], xys[1], 'r:')
+circ = Circle((100,350),50, fill=False, edgecolor='gray')
+ax.add_patch(circ)
+plt.plot(100,350,'x')
+plt.title('Toy Plane: After 120 hours')
+# %%
+
+np.random.multivariate_normal([100,350], [[20,0],[0,20]], size=3)
