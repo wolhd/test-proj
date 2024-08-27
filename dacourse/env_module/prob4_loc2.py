@@ -29,8 +29,8 @@ print(f'd4 shape: {np.shape(d4)}')
 
 # %%
 # save time series data for location 100,100
-loc_x = 100
-loc_y = 100
+loc_x = 150
+loc_y = 410
 ts_u = d4[:,0,loc_y,loc_x]
 ts_v = d4[:,1,loc_y,loc_x]
 
