@@ -14,8 +14,8 @@ a = np.array(range(12)).reshape((3,4))
 
 # %%
 # load OceanFlow data from csv files
+datadir = "environ_module/OceanFlow/"
 for i in range(1,101):
-    datadir = "OceanFlow/"
     ufilename = datadir + str(i) + "u.csv"
     vfilename = datadir + str(i) + "v.csv"
     udata = np.loadtxt(open(ufilename), delimiter=",")
@@ -279,7 +279,7 @@ alldata = np.zeros((1,n_xs))
 
 #%%
 # Define estim_unobs()
-def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle):
+def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle, doPlot):
     n_xs = covs.shape[0]
     # data[0, ind_x2]  should be u or v data for idxs out of 300
 
@@ -320,18 +320,20 @@ def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle):
     #xs = np.arange(1, 361)
     xs = np.arange(0, n_xs)
 
-    plt.figure(figsize=(12,8))
-    plt.plot(xs, new_mu, c='r', label=r"Predicted conditional mean", lw=0.5)
-    plt.plot(xs, new_mu + 3*new_sigma, c='k', label="Three Sigma Upper Bound", lw=0.5)
-    plt.plot(xs, new_mu - 3*new_sigma, c='b', label="Three Sigma Lower Bound", lw=0.5)
-    plt.scatter(ind_x2+1, alldata[0, ind_x2], c='r', marker='o', label="Observed data", lw=0.5)
-    # plt.scatter(ind_x1+1, alldata[0, ind_x1], c='r', marker='x', label="Observation of $X_1$", lw=0.5)
-    plt.xlabel("Time")
-    plt.ylabel("Flow")
-    plt.title("Estimating Unobserved Data: " + subTitle)
-    plt.legend()
-    plt.show()
-    
+    if doPlot:
+        plt.figure(figsize=(12,8))
+        plt.plot(xs, new_mu, c='r', label=r"Predicted conditional mean", lw=0.5)
+        plt.plot(xs, new_mu + 3*new_sigma, c='k', label="Three Sigma Upper Bound", lw=0.5)
+        plt.plot(xs, new_mu - 3*new_sigma, c='b', label="Three Sigma Lower Bound", lw=0.5)
+        plt.scatter(ind_x2+1, alldata[0, ind_x2], c='r', marker='o', label="Observed data", lw=0.5)
+        # plt.scatter(ind_x1+1, alldata[0, ind_x1], c='r', marker='x', label="Observation of $X_1$", lw=0.5)
+        plt.xlabel("Time")
+        plt.ylabel("Flow")
+        plt.title("Estimating Unobserved Data: " + subTitle)
+        plt.legend()
+        plt.show()
+    return new_mu
+
 
 #%%
 # Run estim_unobs for U and V
@@ -339,10 +341,43 @@ def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle):
 # def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle):
 
 alldata[0, ind_x2] = ts_u
-estim_unobs(params_best_u, alldata, covs, ind_x2, ind_x1, "U Comp " + f", location {[loc_x,loc_y]}")
+new_mu = estim_unobs(params_best_u, alldata, covs, ind_x2, ind_x1, "U Comp " + f", location {[loc_x,loc_y]}", True)
 
 
 alldata[0, ind_x2] = ts_v
-estim_unobs(params_best_v, alldata, covs, ind_x2, ind_x1, "V Comp" + f", location {[loc_x,loc_y]}")
+new_mu = estim_unobs(params_best_v, alldata, covs, ind_x2, ind_x1, "V Comp" + f", location {[loc_x,loc_y]}", True)
+
+# %%
+# Generate unobs predictions for all locations
+
+# alldata = np.zeros((1,n_xs))
+# ts_u = d4[:,0,loc_y,loc_x]
+# ts_v = d4[:,1,loc_y,loc_x]
+def getUV(d4In, loc_x, loc_y):
+    u = d4In[:,0, loc_y, loc_x]
+    v = d4In[:,1, loc_y, loc_x]
+    return (u,v)
+
+
+newData4 = np.zeros( (n_xs, 2, d4.shape[2], d4.shape[3]) )
+
+doPlot = False
+dataIn = np.zeros( (1,n_xs) )
+for loc_x in range( d4.shape[3] ):
+    for loc_y in range( d4.shape[2] ):
+        (u, v) = getUV(d4, loc_x, loc_y)
+        
+        if not all(u==0):
+            dataIn[0, ind_x2] = u
+            new_mu = estim_unobs(params_best_u, dataIn, covs, ind_x2, ind_x1, "U Comp " + f", location {[loc_x,loc_y]}", doPlot)
+            newData4[:, 0, loc_y, loc_x] = new_mu
+
+        if not all(v==0):
+            dataIn[0, ind_x2] = v
+            new_mu = estim_unobs(params_best_v, dataIn, covs, ind_x2, ind_x1, "V Comp" + f", location {[loc_x,loc_y]}", doPlot)
+            newData4[:, 1, loc_y, loc_x] = new_mu
+    if loc_x % 50 == 0:
+        print( f' process loc_x {loc_x}')  # print progress
+print( f' newData4 shape {newData4.shape}' )
 
 # %%
