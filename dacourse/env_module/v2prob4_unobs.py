@@ -1,7 +1,7 @@
 # problem 4a
 # build gaussian model
 #%%
-%cd environ_module
+#%cd environ_module
 
 #%%
 import numpy as np
@@ -321,14 +321,14 @@ def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle):
     xs = np.arange(0, n_xs)
 
     plt.figure(figsize=(12,8))
-    plt.plot(xs, new_mu, c='r', label=r"$\mu_{X_1 | X_2}$", lw=0.5)
-    plt.plot(xs, new_mu + 2*new_sigma, c='k', label="Two Sigma Upper Bound", lw=0.5)
-    plt.plot(xs, new_mu - 2*new_sigma, c='b', label="Two Sigma Lower Bound", lw=0.5)
-    plt.scatter(ind_x2+1, alldata[0, ind_x2], c='r', marker='o', label="Observation of $X_2$", lw=0.5)
-    plt.scatter(ind_x1+1, alldata[0, ind_x1], c='r', marker='x', label="Observation of $X_1$", lw=0.5)
+    plt.plot(xs, new_mu, c='r', label=r"Predicted conditional mean", lw=0.5)
+    plt.plot(xs, new_mu + 3*new_sigma, c='k', label="Three Sigma Upper Bound", lw=0.5)
+    plt.plot(xs, new_mu - 3*new_sigma, c='b', label="Three Sigma Lower Bound", lw=0.5)
+    plt.scatter(ind_x2+1, alldata[0, ind_x2], c='r', marker='o', label="Observed data", lw=0.5)
+    # plt.scatter(ind_x1+1, alldata[0, ind_x1], c='r', marker='x', label="Observation of $X_1$", lw=0.5)
     plt.xlabel("Time")
     plt.ylabel("Flow")
-    plt.title(subTitle)
+    plt.title("Estimating Unobserved Data: " + subTitle)
     plt.legend()
     plt.show()
     
@@ -339,10 +339,10 @@ def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle):
 # def estim_unobs(params_best, alldata, covs, ind_x2, ind_x1, subTitle):
 
 alldata[0, ind_x2] = ts_u
-estim_unobs(params_best_u, alldata, covs, ind_x2, ind_x1, "U Comp")
+estim_unobs(params_best_u, alldata, covs, ind_x2, ind_x1, "U Comp " + f", location {[loc_x,loc_y]}")
 
 
 alldata[0, ind_x2] = ts_v
-estim_unobs(params_best_v, alldata, covs, ind_x2, ind_x1, "V Comp")
+estim_unobs(params_best_v, alldata, covs, ind_x2, ind_x1, "V Comp" + f", location {[loc_x,loc_y]}")
 
 # %%

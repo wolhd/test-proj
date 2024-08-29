@@ -32,7 +32,7 @@ print(f'd4 shape: {np.shape(d4)}')
 # %%
 # save time series data for location 100,100
 # loc_x = 100
-# loc_y = 60
+# loc_y = 40
 loc_x = 150
 loc_y = 410
 
@@ -221,11 +221,14 @@ def findOptim(a_vals, ell_vals, ind_x2, data, subTitle, tau):
     plt.legend()
     plt.show()
 
+    best_txt = "Best parameters: A={a:.3f}, L={ell:.3f}".format(**params_best)
+    tau_txt = f" (Tau={tau:.3f})"
+
     fig, ax = plt.subplots()
     pos = ax.imshow(logpdfs, origin='lower', aspect='auto', extent=[ell_vals[0], ell_vals[-1], a_vals[0], a_vals[-1]] )
     fig.colorbar(pos, ax=ax)
     ax.plot(params_best_ell, params_best_a, 'rx')
-    ax.set_title(subTitle + ': \nAvg Log PDF over A,L parameter space')
+    ax.set_title(subTitle + ': \nAvg Log PDF over A,L parameter space\n' + best_txt + tau_txt)
     ax.set_xlabel('L param')
     ax.set_ylabel('A param')
     plt.show()
@@ -237,13 +240,13 @@ def findOptim(a_vals, ell_vals, ind_x2, data, subTitle, tau):
 # Set Search Space, Find Optimal Parameters
 a_vals = np.arange(.001, 4, 0.05)
 ell_vals = np.arange(30, 360, 5)
-tau = .001
+tau = .1
 
 ind_x2 = train_idxs
 data = np.array([ts_u, ts_v, ts_u_mean, ts_v_mean])
 
 # data[0] is data, data[2] is means
-params_best_u = findOptim(a_vals, ell_vals, ind_x2, data, f"Flow U Comp., location idx {[loc_x,loc_y]}", tau)
+params_best_u = findOptim(a_vals, ell_vals, ind_x2, data, f"Flow U Comp., location idx {[loc_x,loc_y]} ", tau)
 
 
 #%%

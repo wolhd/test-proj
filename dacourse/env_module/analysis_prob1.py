@@ -150,7 +150,8 @@ for x in range(n_x):
         nanmap[y,x]=1.0
 print(f' nan count {nancount}')
 implot(nanmap, cmap='ocean')
-
+# nanmap is 2d array of 1's 0's, if 0 no flow data, if 1 has flow data
+#    shape 504,555
 
 # %%
 
@@ -185,7 +186,7 @@ for y1 in y_inds:
         cmap = np.empty((n_y, n_x)).astype(float)
         cmap[:] = np.nan
 
-        print(f' find corr for xy {x1},{y1}')
+        # print(f' find corr for xy {x1},{y1}')
         # get corr for all x2,y2's
         for y2 in y_inds:
             for x2 in x_inds:
@@ -222,10 +223,12 @@ for y1 in y_inds:
         hicorrIdx = np.unravel_index( np.nanargmax(cmap), cmap.shape )
         hicorrmap[y1, x1, :] = np.array([hicorrIdx[0], hicorrIdx[1], hicorr])
         hicorrval[y1, x1] = hicorr
-        print(f' hi corr={hicorr} x1,y1->x2,y2 {[x1,y1]} -> {[hicorrIdx[1],hicorrIdx[0]]}')
+        # print(f' hi corr={hicorr} x1,y1->x2,y2 {[x1,y1]} -> {[hicorrIdx[1],hicorrIdx[0]]}')
     
 nonnan = hicorrval[~np.isnan(hicorrval)]
 plt.plot(nonnan)
+
+
 #%%
 plt.hist(nonnan, bins=50)
 plt.xlabel('correlation coefficient')
@@ -300,9 +303,11 @@ a = np.array(range(12)).reshape((3,4))
 a[0,3] = 100
 a[0,2] = 200
 np.sort(a.reshape(-1))[-4:]
-# %%
 
-# simulation
+
+##########################################################################
+# %%
+# Simulation
 import math
 
 x_km = 100 * 3
@@ -317,8 +322,13 @@ def getFlowIndex(km, hr, maxIdx):
     t = math.floor(hr/3)
     return (i,t)
 
+def km2Idxs(xs_km):
+   return np.floor(xs_km/3).astype(int)
+
 #%%
 def sim(x_km, y_km, len_t_hr, dt_hr):
+    # calculate trajectory of particle, return idxs for the traj points
+    # args: start location of sim, length of sim, time increment of sim
     xs_km = np.array([x_km])
     ys_km = np.array([y_km])
 
@@ -339,21 +349,19 @@ def sim(x_km, y_km, len_t_hr, dt_hr):
             u = d4[t, 0, y, x ]
             v = d4[t, 1, y, x ]
 
-        x_km = x_km + u * t_hr
-        y_km = y_km + v * t_hr
+        x_km = x_km + u * dt_hr
+        y_km = y_km + v * dt_hr
         xs_km = np.append(xs_km, x_km)
         ys_km = np.append(ys_km, y_km)
         # print(x_km)
     return (km2Idxs(xs_km), km2Idxs(ys_km))
 
 
-# %%
-def km2Idxs(xs_km):
-   return np.floor(xs_km/3).astype(int)
 
 #xy_in = np.array([[100,100], [200,110], [350,150], [400,200], [220,190],[420,420],[290,440],[150,410]])
 
 #%%
+# Run sim for set of start points  [x,y]
 xy_in_arr = np.array([[100,100], [110,200], [200,220], [150, 400], [420,100], [470,220], [400,400]])
 xy_in_kms = xy_in_arr*3
 xys_traj_list = list()
@@ -363,13 +371,33 @@ for i in range(len(xy_in_kms)):
     xys = sim( xy_in[0], xy_in[1], 300, 1 )
     xys_traj_list.append( xys )
 
+
+#%%
+# Run sim for a random set of start points
+np.random.seed(4)
+start_xs = np.random.uniform(low=5, high=550, size=(100,))
+start_ys = np.random.uniform(low=5, high=500, size=(100,))
+xy_in_arr = np.array([start_xs, start_ys]).T
+xy_in_kms = xy_in_arr*3
+xys_traj_list = list()
+for i in range(len(xy_in_kms)):
+    xy_in = xy_in_kms[i]
+
+    xys = sim( xy_in[0], xy_in[1], 300, 1 )
+    xys_traj_list.append( xys )
+
+
+
 #%%    
+# Plot sim results
 fig, ax = plt.subplots()
 pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
 for i in range( len( xys_traj_list ) ):
     xys = xys_traj_list[i]
     ax.plot(xys[0], xys[1])
 plt.title('Particle flow, After 300 hours')
+
+
 
 # %%
 fig, ax = plt.subplots()
@@ -390,19 +418,65 @@ fig, ax = plt.subplots()
 pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
 for i in range( len( xys_traj_list ) ):
     xys = xys_traj_list[i]
-    ax.plot(xys[0][0:30], xys[1][0:30])
-plt.title('Particle flow: After 100 hours')
+    ax.plot(xys[0][0:200], xys[1][0:200])
+plt.title('Particle flow: After 200 hours')
 # %%
 fig, ax = plt.subplots()
 pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
 for i in range( len( xys_traj_list ) ):
     xys = xys_traj_list[i]
-    ax.plot(xys[0][0:55], xys[1][0:55])
-plt.title('Particle flow: After 200 hours')
+    ax.plot(xys[0][:], xys[1][:])
+plt.title('Particle flow: After 300 hours')
 
 # %%
+# Prob 3.b toy plane problem
+def plot_traj(xys_traj_list, endIdx_t, title, **kwargs):
+    fig, ax = plt.subplots()
+    pos = ax.imshow(nanmap, origin='lower', cmap='ocean')
+    for i in range( len( xys_traj_list ) ):
+        xys = xys_traj_list[i]
+        ax.plot(xys[0][:endIdx_t], xys[1][:endIdx_t], **kwargs)
+    plt.title(title)
 
-# toy plane problem
+
+#%%
+
+sigma2 = 2000
+xy_in_kms = np.random.multivariate_normal([300,1050], [[sigma2, 0],[0, sigma2]], size=30)
+xys_traj_list = list()
+for i in range(len(xy_in_kms)):
+    xy_in = xy_in_kms[i]
+    xys = sim( xy_in[0], xy_in[1], 120, 1 )
+    xys_traj_list.append( xys )
+plot_traj(xys_traj_list, 48, 'Toy Plane 48 hrs, var=2000')
+plot_traj(xys_traj_list, 72, 'Toy Plane 72 hrs, var=2000')
+plot_traj(xys_traj_list, 120, 'Toy Plane 120 hrs, var=2000')
+
+#%%
+sigma2 = 15000
+xy_in_kms = np.random.multivariate_normal([300,1050], [[sigma2, 0],[0, sigma2]], size=30)
+xys_traj_list = list()
+for i in range(len(xy_in_kms)):
+    xy_in = xy_in_kms[i]
+    xys = sim( xy_in[0], xy_in[1], 120, 1 )
+    xys_traj_list.append( xys )
+plot_traj(xys_traj_list, 48, 'Toy Plane 48 hrs, var=15000')
+plot_traj(xys_traj_list, 72, 'Toy Plane 72 hrs, var=15000')
+plot_traj(xys_traj_list, 120, 'Toy Plane 120 hrs, var=15000')
+
+#%%
+# single toy
+xys_traj_list = list()
+xys = sim( 350, 1050, 120, 1 )
+xys_traj_list.append( xys )
+plot_traj(xys_traj_list, 48, 'Toy Plane 48 hrs', color='red')
+plot_traj(xys_traj_list, 72, 'Toy Plane 72 hrs', color='red')
+plot_traj(xys_traj_list, 120, 'Toy Plane 120 hrs', color='red')
+
+
+
+#%%
+# to plane problem - prev 
 x_km = 300
 y_km = 1050
 # plots for 48, 72, 120 hrs
@@ -483,5 +557,3 @@ ax.add_patch(circ)
 plt.plot(100,350,'x')
 plt.title('Toy Plane: After 120 hours')
 # %%
-
-np.random.multivariate_normal([100,350], [[20,0],[0,20]], size=3)
