@@ -1,0 +1,48 @@
+
+# to generate compile commands json
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+
+# to remove debug flag, but applies to all in this config, not just one source file?
+message("print flags: ${CMAKE_CXX_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS_DEBUG "")
+
+
+# can use target_compile_options for options for specific target but
+  these compile options are added to directory wide COMPILE_OPTIONS (not replacing)
+
+
+
+? is it possible to make connectcomp work  in rel with deb info? i.e.,
+  allow debug build but add -O1 or -O2  (adding a flag can be done
+  with e.g.,:
+    set_source_files_properties(foo.cpp PROPERTIES COMPILE_FLAGS -Wno-effc++)
+  only do if debug build, do something like
+     set_property(TARGET foo PROPERTY
+        CUSTOM_KEYS $<$<CONFIG:DEBUG>:FOO_EXTRA_THINGS>
+     )
+     so 
+     set_source_files_properties(foo.cpp PROPERTIES COMPILE_FLAGS $<$<CONFIG:DEBUG>:-O2
+     or
+     could have separate bracketed IF statement to check if debug before set_source_filies...
+
+
+
+- no way to REMOVE flags from source file or target
+
+  except creating a new subdir and subproject just for connectcomp
+   and then set at top of CMakeLists.txt
+    set(CMAKE_BUILD_TYPE Release) so thisprojec will always build as release
+    evan when parent project is set for Debug build.
+
+
+
+example
+set_source_files_properties(myfile.cpp PROPERTIES 
+    COMPILE_FLAGS $<$<CONFIG:RelDebug>:/O2>
+    SKIP_PRECOMPILE_HEADERS $<$<CONFIG:RelDebug>:ON>
+)
+target_compile_definitions(exe1 PRIVATE
+  $<$<CONFIG:Debug>:DEBUG_BUILD>
+)
+ 
